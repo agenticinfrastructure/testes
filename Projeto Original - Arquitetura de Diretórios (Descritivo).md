@@ -22,7 +22,7 @@ Esta arquitetura foi projetada para suportar uma plataforma de IA de larga escal
 
 ## 2. Árvore de Diretórios Super Detalhada
 
-*A árvore completa com mais de 800 linhas está no documento `ArquiteturaDiretoriosVFinal_ArvoreCompleta.md` gerado anteriormente.*
+*A árvore completa com mais de 800 linhas está no documento `Projeto Original - Arquitetura de Diretórios (Árvore Completa).md` gerado anteriormente.*
 
 ## 3. Descrição por Diretório
 
