@@ -1,0 +1,196 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#4338CA', 'lineColor': '#6366F1', 'secondaryColor': '#10B981', 'tertiaryColor': '#F59E0B', 'background': '#F8FAFC'}}}%%
+
+flowchart TB
+    %% ============================================================
+    %% DIAGRAMA MVP — AGENTE ÚNICO PRODUCTION-GRADE
+    %% Versão: 1.0 | Data: 30/12/2025
+    %% Foco: Integração ponta-a-ponta, Sandbox seguro, Observabilidade
+    %% ============================================================
+
+    subgraph USER_PLANE["👤 USER PLANE"]
+        USER["📱 User<br/><small>Browser / Mobile</small>"]
+    end
+
+    subgraph EDGE["🌐 EDGE / CDN"]
+        CLOUDFLARE["☁️ Cloudflare<br/><small>WAF + Cache + DDoS Protection</small><br/><small>✅ Configurado</small>"]
+    end
+
+    subgraph CLIENTS["📱 CLIENTS (apps/)"]
+        WEB["🌐 Web App<br/><small>Next.js 14 + React 18</small><br/><small>✅ Deployed (2 pods)</small>"]
+        MOBILE["📱 Mobile App<br/><small>Expo + React Native</small><br/><small>⏳ MVP+1</small>"]
+    end
+
+    subgraph BACKEND_SERVICES["⚙️ BACKEND SERVICES (packages/services/)"]
+        subgraph API_LAYER["🔌 API Layer"]
+            API["🔌 Backend API<br/><small>Fastify 4 + REST</small><br/><small>🔧 Corrigir: K8s Secrets</small>"]
+            
+            subgraph API_ROUTES["📡 API Routes"]
+                AUTH_ROUTES["🔐 /auth/*<br/><small>signup, login, refresh</small><br/><small>✅ Implementado</small>"]
+                BILLING_ROUTES["💳 /billing/*<br/><small>checkout, portal</small><br/><small>✅ Implementado</small>"]
+                TASK_ROUTES["🤖 /v1/tasks/*<br/><small>create, status, cancel</small><br/><small>🔧 IMPLEMENTAR</small>"]
+                WEBHOOK_ROUTES["🔔 /webhooks/*<br/><small>Stripe callbacks</small><br/><small>✅ Implementado</small>"]
+            end
+        end
+
+        subgraph LLM_SELECTOR["🎯 LLM Selector (packages/services/orchestrator/)"]
+            MODEL_SELECTOR["📊 Model Selector<br/><small>Seleciona LLM por critérios</small><br/><small>✅ Implementado</small>"]
+            CRITERIA_ENGINE["⚖️ Criteria Engine<br/><small>68 critérios / 9 famílias</small><br/><small>⚠️ TODO no código</small>"]
+        end
+    end
+
+    subgraph AGENT_RUNTIME["🧠 AGENT RUNTIME (packages/core/agent-core/)"]
+        subgraph TASK_LIFECYCLE["📋 Task Lifecycle"]
+            TASK_QUEUE["📥 Task Queue<br/><small>Redis / In-Memory</small><br/><small>🔧 IMPLEMENTAR</small>"]
+            TASK_STATE["📊 Task State<br/><small>pending → running → done/failed</small><br/><small>🔧 IMPLEMENTAR</small>"]
+        end
+
+        AGENT["🤖 Agent (Singleton)<br/><small>agent.ts - Loop Principal</small><br/><small>✅ Implementado</small>"]
+
+        subgraph AGENT_MODULES["🧩 Agent Modules"]
+            PLANNER["📋 TodoManager<br/><small>Planejamento Dinâmico</small><br/><small>✅ Implementado</small>"]
+            EXECUTOR["⚡ ToolExecutor<br/><small>Executa ferramentas</small><br/><small>✅ Implementado</small>"]
+            MEMORY["🧠 MemoryManager<br/><small>Compressão de Contexto</small><br/><small>✅ Implementado</small>"]
+            VERIFIER["✅ VerificationManager<br/><small>Validação de Output</small><br/><small>✅ Implementado</small>"]
+            WORKSPACE["📁 WorkspaceManager<br/><small>FSaC - File System</small><br/><small>✅ Implementado</small>"]
+        end
+
+        subgraph TOOLS_LAYER["🔧 Tools Layer"]
+            subgraph SECURE_TOOLS["🔒 Secure Execution"]
+                SANDBOX["📦 E2B Sandbox<br/><small>Execução Isolada</small><br/><small>🔧 IMPLEMENTAR</small>"]
+                SHELL_TOOL["🖥️ ShellTool<br/><small>→ Via Sandbox</small><br/><small>🔧 REFATORAR</small>"]
+            end
+            FILE_READ["📖 FileReadTool<br/><small>✅ Implementado</small>"]
+            FILE_WRITE["✏️ FileWriteTool<br/><small>✅ Implementado</small>"]
+            SEARCH_TOOL["🔍 SearchTool<br/><small>✅ Implementado</small>"]
+        end
+    end
+
+    subgraph LLM_PROVIDERS["☁️ LLM PROVIDERS"]
+        subgraph ANTHROPIC["🟣 Anthropic"]
+            CLAUDE_SONNET["Claude 3.5 Sonnet<br/><small>Primary Reasoning</small><br/><small>✅ API Key OK</small>"]
+            CLAUDE_HAIKU["Claude 3.5 Haiku<br/><small>Fast Tasks</small><br/><small>✅ API Key OK</small>"]
+        end
+        subgraph ALIBABA["🟢 Alibaba Cloud"]
+            QWEN_TURBO["Qwen-Turbo<br/><small>Cost-Effective</small><br/><small>⏳ Verificação pendente</small>"]
+            QWEN_MAX["Qwen-Max<br/><small>High Quality</small><br/><small>⏳ Verificação pendente</small>"]
+        end
+    end
+
+    subgraph IMAGE_GEN["🎨 IMAGE GENERATION"]
+        NANOBANANA["🍌 NanoBanana<br/><small>Gemini Wrapper</small><br/><small>🔧 CORRIGIR: É imagem, não texto</small>"]
+        GEMINI["🔷 Gemini 2.0 Flash<br/><small>Backend real</small><br/><small>🔧 IMPLEMENTAR</small>"]
+    end
+
+    subgraph PAYMENTS["💳 PAYMENTS"]
+        STRIPE_API["💳 Stripe API<br/><small>Checkout + Webhooks</small><br/><small>✅ Configurado</small>"]
+    end
+
+    subgraph DATA_LAYER["🗄️ DATA LAYER"]
+        POSTGRES["🐘 Cloud SQL<br/><small>PostgreSQL 15</small><br/><small>✅ Deployed</small>"]
+        REDIS["🔴 Redis<br/><small>Cache + Task Queue</small><br/><small>🔧 IMPLEMENTAR</small>"]
+    end
+
+    subgraph OBSERVABILITY["📊 OBSERVABILITY"]
+        PROMETHEUS["📈 Prometheus<br/><small>Metrics Collection</small><br/><small>✅ Deployed</small>"]
+        GRAFANA["📊 Grafana<br/><small>Dashboards</small><br/><small>✅ Deployed</small>"]
+        ALERTMANAGER["🚨 Alertmanager<br/><small>Alertas</small><br/><small>✅ Deployed</small>"]
+        LOGGING["📝 Structured Logging<br/><small>JSON + Correlation ID</small><br/><small>🔧 IMPLEMENTAR</small>"]
+    end
+
+    subgraph INFRA["🏭 INFRASTRUCTURE (GCP)"]
+        GKE["☸️ GKE Cluster<br/><small>ai-platform-gke-staging</small><br/><small>✅ Deployed</small>"]
+        K8S_SECRETS["🔑 K8s Secrets<br/><small>stripe, llm, db</small><br/><small>🔧 CONFIGURAR</small>"]
+        ARTIFACT_REG["📦 Artifact Registry<br/><small>Container Images</small><br/><small>✅ Deployed</small>"]
+    end
+
+    subgraph CICD["🔄 CI/CD"]
+        GITHUB_ACTIONS["🐙 GitHub Actions<br/><small>Build + Test + Deploy</small><br/><small>⚠️ Deploy timeout</small>"]
+    end
+
+    %% ============================================================
+    %% FLUXO PRINCIPAL (PONTA-A-PONTA)
+    %% ============================================================
+
+    USER --> CLOUDFLARE
+    CLOUDFLARE --> WEB
+    MOBILE -.-> CLOUDFLARE
+
+    WEB --> API
+    
+    %% API Routes
+    API --> AUTH_ROUTES
+    API --> BILLING_ROUTES
+    API --> TASK_ROUTES
+    API --> WEBHOOK_ROUTES
+
+    %% Task Flow (INTEGRAÇÃO CRÍTICA)
+    TASK_ROUTES -->|"POST /v1/tasks"| TASK_QUEUE
+    TASK_QUEUE --> TASK_STATE
+    TASK_STATE -->|"Inicia execução"| AGENT
+
+    %% Agent internal flow
+    AGENT --> PLANNER
+    AGENT --> EXECUTOR
+    AGENT --> MEMORY
+    AGENT --> VERIFIER
+    AGENT --> WORKSPACE
+
+    %% Tools execution
+    EXECUTOR --> SANDBOX
+    SANDBOX --> SHELL_TOOL
+    EXECUTOR --> FILE_READ
+    EXECUTOR --> FILE_WRITE
+    EXECUTOR --> SEARCH_TOOL
+
+    %% LLM Selection
+    AGENT -->|"Solicita LLM"| MODEL_SELECTOR
+    MODEL_SELECTOR --> CRITERIA_ENGINE
+    MODEL_SELECTOR --> CLAUDE_SONNET
+    MODEL_SELECTOR --> CLAUDE_HAIKU
+    MODEL_SELECTOR --> QWEN_TURBO
+    MODEL_SELECTOR --> QWEN_MAX
+
+    %% Image Generation (separado de texto)
+    MODEL_SELECTOR -.->|"Geração de Imagem"| NANOBANANA
+    NANOBANANA --> GEMINI
+
+    %% Billing
+    BILLING_ROUTES --> STRIPE_API
+    WEBHOOK_ROUTES --> STRIPE_API
+
+    %% Data Layer
+    API --> POSTGRES
+    TASK_STATE --> REDIS
+    AGENT --> WORKSPACE
+
+    %% Observability
+    API -.-> PROMETHEUS
+    AGENT -.-> PROMETHEUS
+    PROMETHEUS --> GRAFANA
+    PROMETHEUS --> ALERTMANAGER
+    API -.-> LOGGING
+    AGENT -.-> LOGGING
+
+    %% Infrastructure
+    GKE --> API
+    GKE --> AGENT
+    GKE --> K8S_SECRETS
+    K8S_SECRETS -.-> API
+    K8S_SECRETS -.-> AGENT
+
+    %% CI/CD
+    GITHUB_ACTIONS --> ARTIFACT_REG
+    ARTIFACT_REG --> GKE
+
+    %% ============================================================
+    %% STYLING
+    %% ============================================================
+    classDef implemented fill:#10B981,stroke:#059669,color:#fff
+    classDef partial fill:#F59E0B,stroke:#D97706,color:#fff
+    classDef pending fill:#EF4444,stroke:#DC2626,color:#fff
+    classDef critical fill:#DC2626,stroke:#991B1B,color:#fff,stroke-width:3px
+
+    class CLOUDFLARE,WEB,AUTH_ROUTES,BILLING_ROUTES,WEBHOOK_ROUTES,MODEL_SELECTOR,AGENT,PLANNER,EXECUTOR,MEMORY,VERIFIER,WORKSPACE,FILE_READ,FILE_WRITE,SEARCH_TOOL,CLAUDE_SONNET,CLAUDE_HAIKU,STRIPE_API,POSTGRES,PROMETHEUS,GRAFANA,ALERTMANAGER,GKE,ARTIFACT_REG implemented
+    class API,CRITERIA_ENGINE,QWEN_TURBO,QWEN_MAX,GITHUB_ACTIONS partial
+    class TASK_ROUTES,TASK_QUEUE,TASK_STATE,SANDBOX,SHELL_TOOL,NANOBANANA,GEMINI,REDIS,K8S_SECRETS,LOGGING pending
+    class MOBILE notstarted
