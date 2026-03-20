@@ -1,0 +1,287 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#4338CA', 'lineColor': '#6366F1', 'secondaryColor': '#10B981', 'tertiaryColor': '#F59E0B', 'background': '#F8FAFC'}}}%%
+
+flowchart TB
+    %% DIAGRAMA FUTURO — ARQUITETURA MULTI-AGENTE REAL
+
+    subgraph USER_PLANE["USER PLANE"]
+        USER["User"]
+    end
+
+    subgraph EDGE["EDGE / SECURITY"]
+        CLOUDFLARE["Cloudflare WAF"]
+        INPUT_VAL["Input Validation"]
+    end
+
+    subgraph CLIENTS["CLIENTS"]
+        WEB["Web App - Next.js"]
+        MOBILE["Mobile App - Expo"]
+        API_CLIENT["API Client / SDK"]
+    end
+
+    subgraph API_GATEWAY["API GATEWAY"]
+        API["Backend API - Fastify"]
+        AUTH_ROUTE["POST /auth/*"]
+        BILLING_ROUTE["POST /billing/*"]
+        TASK_ROUTE["POST /v1/tasks/*"]
+        WEBHOOK_ROUTE["POST /webhooks/*"]
+        RATE_LIMIT["Rate Limiter"]
+        AUTH_MW["Auth Middleware"]
+        QUOTA["Quota Check"]
+    end
+
+    subgraph CONTROL_PLANE["CONTROL PLANE"]
+        TASK_ROUTER["Task Router - Analisa e delega"]
+        STATE_MACHINE["State Machine - pending/running/done"]
+        RETRY["Retry Handler"]
+        FALLBACK["Fallback Handler"]
+        MODEL_SELECTOR["LLM Model Selector - 68 criterios"]
+        COST_OPT["Cost Optimizer"]
+        LATENCY_OPT["Latency Optimizer"]
+    end
+
+    subgraph MESSAGING["MESSAGING - Pub/Sub"]
+        PUBSUB["Google Pub/Sub"]
+        TOPIC_CREATED["task.created"]
+        TOPIC_ASSIGNED["task.assigned"]
+        TOPIC_COMPLETED["subtask.completed"]
+        TOPIC_FAILED["task.failed"]
+        TOPIC_CLARIFY["clarification.needed"]
+    end
+
+    subgraph EXEC_PLANE["EXECUTION PLANE - AGENTS"]
+        EXECUTOR["Executor Agent - User-Facing ISOLADO"]
+        CLARIFY_HANDLER["Clarification Handler"]
+        RESULT_FMT["Result Formatter"]
+        PLANNER["Planner Agent - Task Decomposition"]
+        SUBTASK_GEN["Subtask Generator"]
+        DEP_RESOLVER["Dependency Resolver"]
+        RESEARCHER["Research Agent - Web Research"]
+        WEB_SCRAPER["Web Scraper - Browser-Use"]
+        FACT_CHECK["Fact Checker"]
+        CODER["Coding Agent - Code Generation"]
+        CODE_REVIEW["Code Reviewer"]
+        VERIFIER["Verifier Agent - Output Validation"]
+        QUALITY_SCORE["Quality Scorer"]
+        EVAL_RUN["Eval Runner"]
+    end
+
+    subgraph SHARED_MEM["SHARED MEMORY"]
+        MEM_STORE["Redis Cluster - Memory Store"]
+        TASK_CTX["Task Context"]
+        AGENT_OUT["Agent Outputs"]
+        COMPRESSED["Compressed History"]
+        CTX_CTRL["Context Controller"]
+    end
+
+    subgraph SANDBOX["SANDBOX - E2B"]
+        E2B["E2B Sandbox - Isolated Execution"]
+        SHELL_EXEC["shell_exec"]
+        FILE_OPS["file_read/write"]
+        CODE_EXEC["code_exec"]
+        SANDBOX_POLICY["Sandbox Policy - Limits"]
+    end
+
+    subgraph SAFETY["SAFETY & POLICY"]
+        INPUT_FILTER["Input Filter - Prompt Injection"]
+        OUTPUT_FILTER["Output Filter - PII Detection"]
+        POLICY_ENGINE["Policy Engine"]
+        ISOLATION["Isolation Boundary"]
+    end
+
+    subgraph LLM_PROVIDERS["LLM PROVIDERS"]
+        CLAUDE_OPUS["Claude Opus 4"]
+        CLAUDE_SONNET["Claude Sonnet 4"]
+        CLAUDE_HAIKU["Claude Haiku 3.5"]
+        QWEN_MAX["Qwen-Max"]
+        QWEN_TURBO["Qwen-Turbo"]
+        QWQ_32B["QwQ-32B"]
+        GEMINI_PRO["Gemini 2.0 Pro"]
+        GEMINI_FLASH["Gemini 2.0 Flash"]
+    end
+
+    subgraph IMAGE_GEN["IMAGE GENERATION"]
+        NANOBANANA["NanoBanana API"]
+        IMAGEN["Imagen 3"]
+        DALLE["DALL-E 3"]
+    end
+
+    subgraph DATA["DATA LAYER"]
+        POSTGRES["Cloud SQL - PostgreSQL"]
+        REDIS["Redis Cluster"]
+        GCS["Cloud Storage"]
+    end
+
+    subgraph OBSERVABILITY["OBSERVABILITY"]
+        PROMETHEUS["Prometheus"]
+        CUSTOM_METRICS["Custom Metrics - LLM cost/latency"]
+        LOGS["Structured Logs - JSON"]
+        LOG_AGG["Log Aggregator"]
+        TRACING["Distributed Tracing - OpenTelemetry"]
+        SPANS["Span Collector"]
+        GRAFANA["Grafana Dashboards"]
+        ALERTS["Alertmanager"]
+    end
+
+    subgraph INFRA["INFRASTRUCTURE - GCP"]
+        GKE["GKE Cluster"]
+        API_DEPLOY["API Deployment - HPA 2-10"]
+        AGENT_WORKERS["Agent Workers - HPA 1-20"]
+        ORCH_DEPLOY["Orchestrator - HPA 2-5"]
+        K8S_SEC["K8s Secrets"]
+        SECRET_MGR["GCP Secret Manager"]
+    end
+
+    subgraph CICD["CI/CD"]
+        GH_ACTIONS["GitHub Actions"]
+        CLOUD_BUILD["Cloud Build"]
+        ARGOCD["ArgoCD - GitOps"]
+    end
+
+    %% FLUXO PRINCIPAL
+    USER --> CLOUDFLARE
+    CLOUDFLARE --> INPUT_VAL
+    INPUT_VAL --> WEB
+    INPUT_VAL --> MOBILE
+    INPUT_VAL --> API_CLIENT
+
+    WEB --> API
+    MOBILE --> API
+    API_CLIENT --> API
+
+    API --> RATE_LIMIT
+    RATE_LIMIT --> AUTH_MW
+    AUTH_MW --> QUOTA
+    QUOTA --> TASK_ROUTE
+
+    TASK_ROUTE --> TASK_ROUTER
+    TASK_ROUTER --> STATE_MACHINE
+    STATE_MACHINE --> PUBSUB
+
+    PUBSUB --> TOPIC_CREATED
+    TOPIC_CREATED --> EXECUTOR
+
+    EXECUTOR --> TOPIC_ASSIGNED
+    TOPIC_ASSIGNED --> PLANNER
+
+    PLANNER --> SUBTASK_GEN
+    SUBTASK_GEN --> DEP_RESOLVER
+    DEP_RESOLVER --> PUBSUB
+
+    TASK_ROUTER --> RESEARCHER
+    TASK_ROUTER --> CODER
+    TASK_ROUTER --> VERIFIER
+
+    CODER --> E2B
+    E2B --> SHELL_EXEC
+    E2B --> FILE_OPS
+    E2B --> CODE_EXEC
+    SANDBOX_POLICY -.-> E2B
+
+    RESEARCHER --> WEB_SCRAPER
+    RESEARCHER --> FACT_CHECK
+
+    PLANNER --> MEM_STORE
+    RESEARCHER --> MEM_STORE
+    CODER --> MEM_STORE
+    VERIFIER --> MEM_STORE
+    MEM_STORE --> CTX_CTRL
+    CTX_CTRL --> EXECUTOR
+
+    EXECUTOR --> RESULT_FMT
+    RESULT_FMT --> API
+
+    EXECUTOR --> TOPIC_CLARIFY
+    TOPIC_CLARIFY --> CLARIFY_HANDLER
+    CLARIFY_HANDLER --> USER
+
+    TOPIC_FAILED --> RETRY
+    RETRY --> FALLBACK
+    FALLBACK --> TASK_ROUTER
+
+    PLANNER -.-> MODEL_SELECTOR
+    RESEARCHER -.-> MODEL_SELECTOR
+    CODER -.-> MODEL_SELECTOR
+    VERIFIER -.-> MODEL_SELECTOR
+
+    MODEL_SELECTOR --> COST_OPT
+    MODEL_SELECTOR --> LATENCY_OPT
+    MODEL_SELECTOR --> CLAUDE_OPUS
+    MODEL_SELECTOR --> CLAUDE_SONNET
+    MODEL_SELECTOR --> CLAUDE_HAIKU
+    MODEL_SELECTOR --> QWEN_MAX
+    MODEL_SELECTOR --> QWEN_TURBO
+    MODEL_SELECTOR --> QWQ_32B
+    MODEL_SELECTOR --> GEMINI_PRO
+    MODEL_SELECTOR --> GEMINI_FLASH
+
+    MODEL_SELECTOR -.-> NANOBANANA
+    NANOBANANA --> IMAGEN
+    NANOBANANA --> DALLE
+
+    INPUT_FILTER -.-> EXECUTOR
+    OUTPUT_FILTER -.-> EXECUTOR
+    POLICY_ENGINE -.-> TASK_ROUTER
+    ISOLATION -.-> EXECUTOR
+    ISOLATION -.-> PLANNER
+    ISOLATION -.-> RESEARCHER
+    ISOLATION -.-> CODER
+
+    API --> POSTGRES
+    MEM_STORE --> REDIS
+    CODER --> GCS
+
+    API -.-> PROMETHEUS
+    TASK_ROUTER -.-> PROMETHEUS
+    EXECUTOR -.-> PROMETHEUS
+    PLANNER -.-> PROMETHEUS
+    CODER -.-> PROMETHEUS
+
+    API -.-> LOGS
+    EXECUTOR -.-> LOGS
+    LOGS --> LOG_AGG
+
+    API -.-> TRACING
+    TASK_ROUTER -.-> TRACING
+    TRACING --> SPANS
+
+    PROMETHEUS --> GRAFANA
+    PROMETHEUS --> ALERTS
+
+    GKE --> API_DEPLOY
+    GKE --> AGENT_WORKERS
+    GKE --> ORCH_DEPLOY
+
+    API_DEPLOY --> API
+    AGENT_WORKERS --> EXECUTOR
+    AGENT_WORKERS --> PLANNER
+    AGENT_WORKERS --> RESEARCHER
+    AGENT_WORKERS --> CODER
+    AGENT_WORKERS --> VERIFIER
+    ORCH_DEPLOY --> TASK_ROUTER
+
+    K8S_SEC --> SECRET_MGR
+    SECRET_MGR -.-> API
+    SECRET_MGR -.-> AGENT_WORKERS
+
+    GH_ACTIONS --> CLOUD_BUILD
+    CLOUD_BUILD --> ARGOCD
+    ARGOCD --> GKE
+
+    %% STYLING
+    classDef controlPlane fill:#F59E0B,stroke:#D97706,color:#fff
+    classDef executionPlane fill:#10B981,stroke:#059669,color:#fff
+    classDef memoryState fill:#3B82F6,stroke:#2563EB,color:#fff
+    classDef safetyPolicy fill:#EF4444,stroke:#DC2626,color:#fff
+    classDef messaging fill:#8B5CF6,stroke:#7C3AED,color:#fff
+    classDef sandbox fill:#EC4899,stroke:#DB2777,color:#fff
+    classDef llm fill:#6366F1,stroke:#4F46E5,color:#fff
+    classDef infra fill:#6B7280,stroke:#4B5563,color:#fff
+
+    class CONTROL_PLANE controlPlane
+    class EXEC_PLANE executionPlane
+    class SHARED_MEM memoryState
+    class SAFETY safetyPolicy
+    class MESSAGING messaging
+    class SANDBOX sandbox
+    class LLM_PROVIDERS llm
+    class INFRA infra
